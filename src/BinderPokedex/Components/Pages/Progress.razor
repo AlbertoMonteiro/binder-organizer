@@ -55,13 +55,13 @@
         <ul class="missing-list">
             <Virtualize Items="missing" Context="p" ItemSize="56">
                 <li>
-                    <a href="@($"/pokemon/{p.Id}")">
+                    <a href="@($"pokemon/{p.Id}")">
                         <img src="@p.SpriteUrl" alt="" loading="lazy" />
                         <span class="num">@p.Number</span>
                         <span class="name">@p.Name</span>
                         <span class="muted where">@BinderLayout.SlotOf(p.Id)!.Description</span>
                     </a>
-                    <button class="btn small" @onclick="() => Collection.SetAsync(p.Id, true)">Colocado</button>
+                    <button class="btn small" @onclick="() => Collection.SetAsync(p.Id, true)" disabled="@(!Collection.CanEdit)">Colocado</button>
                 </li>
             </Virtualize>
         </ul>

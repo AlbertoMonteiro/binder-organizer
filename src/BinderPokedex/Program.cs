@@ -1,42 +1,24 @@
 using BinderPokedex.Components;
-using BinderPokedex.Persistence;
 using BinderPokedex.Services;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Hosting.WindowsServices;
+using Microsoft.AspNetCore.Components.Web;
+using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 
-// Como serviço do Windows o diretório atual é System32, então a raiz passa a ser a pasta do executável.
-var builder = WebApplication.CreateBuilder(new WebApplicationOptions
-{
-    Args = args,
-    ContentRootPath = WindowsServiceHelpers.IsWindowsService() ? AppContext.BaseDirectory : null,
-});
-
-builder.Services.AddWindowsService(o => o.ServiceName = "BinderPokedex");
-
-builder.Services.AddRazorComponents()
-    .AddInteractiveServerComponents();
-
-var dbPath = builder.Configuration["Binder:DatabasePath"] is { Length: > 0 } configured
-    ? configured
-    : Path.Combine(builder.Environment.ContentRootPath, "binder.db");
-builder.Services.AddDbContextFactory<BinderDbContext>(o => o.UseSqlite($"Data Source={dbPath}"));
+var builder = WebAssemblyHostBuilder.CreateDefault(args);
+builder.RootComponents.Add<App>("#app");
+builder.RootComponents.Add<HeadOutlet>("head::after");
 
 builder.Services.AddSingleton(_ => new PokedexService());
+builder.Services.AddSingleton<BrowserStorage>();
+builder.Services.AddSingleton<GistSettings>();
+builder.Services.AddSingleton(_ => new HttpClient { BaseAddress = new Uri("https://api.github.com/") });
+builder.Services.AddSingleton<ICollectionRemote, GistCollectionRemote>();
+builder.Services.AddSingleton<ICollectionCache, BrowserCollectionCache>();
 builder.Services.AddSingleton<CollectionService>();
-builder.Services.AddScoped<ReadingPosition>();
+builder.Services.AddSingleton<ReadingPosition>();
 
-var app = builder.Build();
+var host = builder.Build();
 
-await app.Services.GetRequiredService<CollectionService>().InitializeAsync();
+// Mostra na hora a cópia guardada no aparelho; a leitura do gist acontece em segundo plano.
+await host.Services.GetRequiredService<CollectionService>().InitializeAsync();
 
-if (!app.Environment.IsDevelopment())
-{
-    app.UseExceptionHandler("/Error", createScopeForErrors: true);
-}
-app.UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages: true);
-
-app.MapStaticAssets();
-app.MapRazorComponents<App>()
-    .AddInteractiveServerRenderMode();
-
-app.Run();
+await host.RunAsync();

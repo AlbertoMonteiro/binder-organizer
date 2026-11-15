@@ -4,14 +4,14 @@
     {
       "name": "binder-pokedex",
       "runtimeExecutable": "dotnet",
-      "runtimeArgs": ["run", "--project", "src/BinderPokedex", "--no-launch-profile", "-e", "ASPNETCORE_ENVIRONMENT=Development"],
+      "runtimeArgs": ["run", "--project", "src/BinderPokedex", "--no-launch-profile", "--urls", "http://localhost:5150"],
       "port": 5150
     },
     {
-      "name": "binder-pokedex-test",
+      "name": "binder-pokedex-published",
       "runtimeExecutable": "dotnet",
-      "runtimeArgs": ["run", "--project", "src/BinderPokedex", "--no-launch-profile", "-e", "ASPNETCORE_ENVIRONMENT=Development", "--", "--urls", "http://localhost:5151", "--Binder:DatabasePath", "C:\\Users\\alber\\AppData\\Local\\Temp\\claude\\f22a9250adc726ab\\c0b95bd6-aafe-40bc-b81a-379fa06a6b01\\scratchpad\\dbcopy\\binder.db"],
-      "port": 5151
+      "runtimeArgs": ["serve", "-d", "C:/Users/alber/AppData/Local/Temp/claude/f22a9250adc726ab/c0b95bd6-aafe-40bc-b81a-379fa06a6b01/scratchpad/pub/wwwroot", "-p", "5152", "--fallback-file", "C:/Users/alber/AppData/Local/Temp/claude/f22a9250adc726ab/c0b95bd6-aafe-40bc-b81a-379fa06a6b01/scratchpad/pub/wwwroot/index.html"],
+      "port": 5152
     }
   ]
 }

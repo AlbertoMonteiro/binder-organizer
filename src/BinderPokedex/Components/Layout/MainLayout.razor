@@ -1,25 +1,55 @@
 ﻿@inherits LayoutComponentBase
 @implements IDisposable
 @inject CollectionService Collection
+@inject ReadingPosition Position
+@inject IJSRuntime JS
 
 <header class="topbar">
     <div class="topbar-inner">
-        <a class="brand" href="/">
+        <a class="brand" href="">
             <span class="pokeball" aria-hidden="true"></span>
             <span class="brand-text">Binder Pokédex</span>
         </a>
         <SearchBox />
         <nav class="nav">
-            <NavLink href="/" Match="NavLinkMatch.All">Binder</NavLink>
-            <NavLink href="/progresso">Progresso</NavLink>
+            <NavLink href="" Match="NavLinkMatch.All">Binder</NavLink>
+            <NavLink href="progresso">Progresso</NavLink>
+            <NavLink href="config" class="settings-link" title="Sincronização" aria-label="Sincronização">⚙</NavLink>
         </nav>
-        <span class="chip" title="Cartas colocadas no binder">@Collection.CollectedCount / @BinderLayout.Capacity</span>
+        <span class="chip" title="@SyncTitle">
+            <span class="sync-dot @SyncDotClass" aria-hidden="true"></span>
+            @Collection.CollectedCount / @BinderLayout.Capacity
+        </span>
         <button type="button" class="fs-toggle" data-fullscreen-toggle aria-label="Alternar tela cheia" title="Tela cheia">
             <svg class="fs-enter" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" /></svg>
             <svg class="fs-exit" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5" /></svg>
         </button>
     </div>
 </header>
+
+@switch (Collection.Status)
+{
+    case SyncStatus.Offline:
+        <div class="sync-banner" role="status">
+            <strong>Offline · só leitura</strong>
+            <span class="muted">@SyncedText</span>
+            <button class="btn small" @onclick="Collection.RefreshAsync">Tentar de novo</button>
+        </div>
+        break;
+    case SyncStatus.AuthError:
+        <div class="sync-banner" role="status">
+            <strong>Só leitura</strong>
+            <span>@Collection.LastError</span>
+            <a class="btn small" href="config">Arrumar token</a>
+        </div>
+        break;
+    case SyncStatus.NotConfigured:
+        <div class="sync-banner info" role="status">
+            <span>Para ver e marcar sua coleção neste aparelho, conecte sua conta do GitHub.</span>
+            <a class="btn small btn-primary" href="config">Conectar</a>
+        </div>
+        break;
+}
 
 <main class="content">
     @Body
@@ -31,16 +61,55 @@
     <span class="dismiss">🗙</span>
 </div>
 
-@inject ReadingPosition Position
-
 @code {
+    private DotNetObjectReference<MainLayout>? _self;
+
     protected override void OnInitialized() => Collection.Changed += Refresh;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (firstRender) await Position.LoadAsync();
+        if (!firstRender) return;
+        await Position.LoadAsync();
+        _self = DotNetObjectReference.Create(this);
+        try
+        {
+            await JS.InvokeVoidAsync("binderWatchVisibility", _self);
+        }
+        catch (JSException)
+        {
+        }
     }
 
+    /// <summary>Ao voltar para o app, relê o gist (outro aparelho pode ter marcado cartas).</summary>
+    [JSInvokable]
+    public Task OnVisible() => Collection.RefreshIfStaleAsync(TimeSpan.FromSeconds(30));
+
+    private string SyncDotClass => Collection.Status switch
+    {
+        _ when Collection.IsSaving => "saving",
+        SyncStatus.Online => "online",
+        SyncStatus.Connecting => "saving",
+        _ => "offline",
+    };
+
+    private string SyncTitle => Collection.Status switch
+    {
+        _ when Collection.IsSaving => "Salvando no GitHub…",
+        SyncStatus.Online => "Cartas colocadas no binder · sincronizado com o GitHub",
+        SyncStatus.Connecting => "Conectando ao GitHub…",
+        SyncStatus.NotConfigured => "Sem conta do GitHub neste aparelho",
+        _ => $"Só leitura · {SyncedText}",
+    };
+
+    private string SyncedText => Collection.LastSync is { } at
+        ? $"cópia de {at.ToLocalTime():dd/MM HH:mm}"
+        : "nenhuma cópia salva neste aparelho";
+
     private void Refresh() => _ = InvokeAsync(StateHasChanged);
-    public void Dispose() => Collection.Changed -= Refresh;
+
+    public void Dispose()
+    {
+        Collection.Changed -= Refresh;
+        _self?.Dispose();
+    }
 }

@@ -475,7 +475,8 @@ select {
 }
 .sheet .detail-art { width: 120px; height: 120px; }
 .detail-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 12px; }
-.detail-title { display: flex; align-items: baseline; gap: 10px; }
+.detail-title { display: flex; align-items: baseline; flex-wrap: wrap; gap: 10px; }
+.detail-title .binder-link { margin-left: auto; align-self: center; white-space: nowrap; text-decoration: none; }
 .detail-title h2 { margin: 0; font-size: 26px; }
 .tags { display: flex; flex-wrap: wrap; gap: 6px; }
 .gen-badge {
@@ -692,7 +693,7 @@ select {
     .pocket-num { font-size: 10px; }
 
     .detail { flex-direction: column; align-items: stretch; }
-    .detail-art { width: 100%; height: 180px; }
+    .detail-art { width: 100%; height: 130px; }
     .sheet .detail { flex-direction: row; }
     .sheet .detail-art { width: 96px; height: 96px; }
     .location { grid-template-columns: repeat(5, 1fr); gap: 4px; }
@@ -704,6 +705,48 @@ select {
     .sheet .detail { flex-direction: column; }
     .sheet .detail-art { width: 100%; height: 110px; }
 }
+
+/* ---------- sincronização (gist) ---------- */
+.sync-banner {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px 12px;
+    padding: 8px 16px;
+    background: color-mix(in srgb, var(--back) 18%, var(--surface));
+    border-bottom: 1px solid color-mix(in srgb, var(--back) 45%, var(--border));
+    font-size: 14px;
+}
+.sync-banner.info {
+    background: color-mix(in srgb, var(--fwd) 14%, var(--surface));
+    border-bottom-color: color-mix(in srgb, var(--fwd) 40%, var(--border));
+}
+.sync-banner .btn { margin-left: auto; text-decoration: none; }
+.sync-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--muted); display: inline-block; flex: none; margin-right: 4px; }
+.sync-dot.online { background: #2e7d32; }
+.sync-dot.saving { background: var(--gold); animation: sync-pulse 1s infinite alternate; }
+.sync-dot.offline { background: var(--back); }
+@keyframes sync-pulse { from { opacity: .35; } to { opacity: 1; } }
+.nav .settings-link { font-size: 18px; line-height: 1; }
+.readonly-note { margin: 8px 0 0; font-size: 13px; color: var(--muted); }
+.rarity-opt:disabled, .btn:disabled { opacity: .55; cursor: not-allowed; }
+
+.settings { max-width: 640px; margin: 0 auto; display: grid; gap: 16px; }
+.settings section {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+    padding: 16px; display: grid; gap: 10px;
+}
+.settings h2 { margin: 0; font-size: 18px; }
+.settings p { margin: 0; }
+.settings ol { margin: 0; padding-left: 20px; display: grid; gap: 4px; }
+.settings input[type=password] {
+    width: 100%; padding: 10px 12px; font: inherit; border-radius: 8px; box-sizing: border-box;
+    border: 1px solid var(--border); background: var(--surface-2); color: inherit;
+}
+.settings .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.settings .error { color: var(--back); }
+.settings code { word-break: break-all; }
+.app-loading { padding: 48px 16px; text-align: center; color: var(--muted); font-family: system-ui, sans-serif; }
 
 /* ---------- Blazor defaults ---------- */
 #blazor-error-ui {

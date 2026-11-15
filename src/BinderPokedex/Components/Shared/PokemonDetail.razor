@@ -6,6 +6,10 @@
         <div class="detail-title">
             <span class="muted">@Pokemon.Number</span>
             <h2>@Pokemon.Name</h2>
+            @if (ShowBinderLink && _slot is { } top)
+            {
+                <a class="btn btn-primary small binder-link" href="@($"binder/{top.Page}?destaque={Pokemon.Id}")">📖 Ver no binder</a>
+            }
         </div>
         <div class="tags">
             <span class="gen-badge">@Pokemon.GenerationInfo.FullLabel</span>
@@ -83,7 +87,7 @@
                     @foreach (var r in CardRarities.All)
                     {
                         <button type="button" class="rarity-opt @r.CssClass @(_rarity == r ? "selected" : null)"
-                                aria-pressed="@(_rarity == r ? "true" : "false")"
+                                aria-pressed="@(_rarity == r ? "true" : "false")" disabled="@(!Collection.CanEdit)"
                                 @onclick="() => Collection.SetAsync(Pokemon.Id, r)">
                             <span class="rarity-name">@(r.Short is { Length: > 0 } s ? $"{s} " : "")@r.Label</span>
                             @if (r.Hint is { } hint)
@@ -93,16 +97,20 @@
                         </button>
                     }
                 </div>
+                @if (!Collection.CanEdit)
+                {
+                    <p class="readonly-note">
+                        @(Collection.Status == SyncStatus.Connecting
+                            ? "Conectando ao GitHub…"
+                            : "Só leitura agora: para marcar cartas, conecte-se à internet (e à sua conta em ⚙).")
+                    </p>
+                }
             </div>
 
             <div class="actions">
                 @if (_rarity is not null)
                 {
-                    <button class="btn" @onclick="Remove">Tirar do binder</button>
-                }
-                @if (ShowBinderLink)
-                {
-                    <a class="btn" href="@($"/binder/{slot.Page}?destaque={Pokemon.Id}")">Ver no binder</a>
+                    <button class="btn" @onclick="Remove" disabled="@(!Collection.CanEdit)">Tirar do binder</button>
                 }
                 @ChildContent
             </div>

@@ -1,8 +1,8 @@
 {
   "name": "Binder Pokédex",
   "short_name": "Binder",
-  "start_url": "/",
-  "scope": "/",
+  "start_url": "./",
+  "scope": "./",
   "display": "fullscreen",
   "display_override": ["fullscreen", "standalone"],
   "background_color": "#14161a",

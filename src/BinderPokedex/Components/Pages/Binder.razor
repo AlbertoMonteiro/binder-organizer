@@ -66,7 +66,7 @@
     <div class="sheet-backdrop" @onclick="() => _selected = null"></div>
     <div class="sheet" role="dialog" aria-label="@selected.Name">
         <PokemonDetail Pokemon="selected" ShowBinderLink="false">
-            <a class="btn" href="@($"/pokemon/{selected.Id}")">Detalhes</a>
+            <a class="btn" href="@($"pokemon/{selected.Id}")">Detalhes</a>
             <button class="btn" @onclick="() => _selected = null">Fechar</button>
         </PokemonDetail>
     </div>
@@ -103,7 +103,7 @@
         _ => "",
     };
 
-    private void GoPage(int page) => Nav.NavigateTo($"/binder/{Math.Clamp(page, 1, BinderLayout.Pages)}");
+    private void GoPage(int page) => Nav.NavigateTo($"binder/{Math.Clamp(page, 1, BinderLayout.Pages)}");
 
     private void GoSpread(int spread)
     {

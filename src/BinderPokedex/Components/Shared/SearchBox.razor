@@ -1,8 +1,9 @@
 @inherits CollectionAwareComponent
 @inject NavigationManager Nav
+@inject IJSRuntime JS
 
 <div class="searchbox" @onfocusout="Close">
-    <input type="search"
+    <input type="search" @ref="_input"
            placeholder="Pesquisar Pokémon (nome ou nº)…"
            autocomplete="off"
            aria-label="Pesquisar Pokémon"
@@ -86,7 +87,7 @@
                 _active = (_active - 1 + _results.Count) % _results.Count;
                 break;
             case "Enter" when _results.Count > 0:
-                Go(_results[Math.Clamp(_active, 0, _results.Count - 1)]);
+                _ = Go(_results[Math.Clamp(_active, 0, _results.Count - 1)]);
                 break;
             case "Escape":
                 _open = false;
@@ -94,12 +95,21 @@
         }
     }
 
-    private void Go(Pokemon p)
+    private ElementReference _input;
+
+    private async Task Go(Pokemon p)
     {
         _query = "";
         _results = [];
         _open = false;
-        Nav.NavigateTo($"/pokemon/{p.Id}");
+        Nav.NavigateTo($"pokemon/{p.Id}");
+        try
+        {
+            await JS.InvokeVoidAsync("binderBlur", _input); // fecha o teclado do celular
+        }
+        catch (JSException)
+        {
+        }
     }
 
     private void Close() => _open = false;

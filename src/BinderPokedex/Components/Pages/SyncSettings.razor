@@ -1,0 +1,91 @@
+@page "/config"
+@inherits CollectionAwareComponent
+@inject GistSettings Settings
+
+<PageTitle>Sincronização · Binder Pokédex</PageTitle>
+
+<div class="settings">
+    <h1>Sincronização</h1>
+
+    <section>
+        <h2>Situação</h2>
+        <p class="row">
+            <span class="sync-dot @(Collection.CanEdit ? "online" : "offline")" aria-hidden="true"></span>
+            <strong>@StatusText</strong>
+        </p>
+        @if (Collection.LastSync is { } at)
+        {
+            <p class="muted">Última sincronização: @at.ToLocalTime().ToString("dd/MM/yyyy HH:mm:ss") · @Collection.CollectedCount cartas.</p>
+        }
+        @if (Collection.LastError is { } error && !Collection.CanEdit)
+        {
+            <p class="error">@error</p>
+        }
+        @if (Settings.GistId is { } gist)
+        {
+            <p class="muted">Gist: <a href="https://gist.github.com/@gist" target="_blank" rel="noopener">@gist</a></p>
+        }
+        <div class="row">
+            <button class="btn" @onclick="Collection.RefreshAsync" disabled="@(!HasToken)">Sincronizar agora</button>
+        </div>
+    </section>
+
+    <section>
+        <h2>Conta do GitHub</h2>
+        @if (HasToken && !_editing)
+        {
+            <p>Este aparelho está conectado. O token fica guardado só aqui.</p>
+            <div class="row">
+                <button class="btn" @onclick="() => _editing = true">Trocar token</button>
+                <button class="btn" @onclick="Disconnect">Desconectar este aparelho</button>
+            </div>
+        }
+        else
+        {
+            <p>A coleção fica num gist secreto da sua conta. Em cada aparelho, cole um token com permissão <strong>gist</strong>:</p>
+            <ol>
+                <li><a href="https://github.com/settings/tokens/new?scopes=gist&description=Binder%20Pok%C3%A9dex" target="_blank" rel="noopener">Criar token no GitHub</a> (classic, só a opção <code>gist</code> marcada).</li>
+                <li>Copie o token gerado e cole abaixo.</li>
+            </ol>
+            <input type="password" placeholder="ghp_…" autocomplete="off" @bind="_token" @bind:event="oninput" aria-label="Token do GitHub" />
+            <div class="row">
+                <button class="btn btn-primary" @onclick="Connect" disabled="@string.IsNullOrWhiteSpace(_token)">Conectar</button>
+                @if (_editing)
+                {
+                    <button class="btn" @onclick="() => _editing = false">Cancelar</button>
+                }
+            </div>
+            <p class="muted">Na primeira vez o app procura o gist <code>@GistCollectionRemote.FileName</code> na sua conta e, se não existir, cria um.</p>
+        }
+    </section>
+</div>
+
+@code {
+    private string? _token;
+    private bool _editing;
+
+    private bool HasToken => Settings.Token is { Length: > 0 };
+
+    private string StatusText => Collection.Status switch
+    {
+        SyncStatus.Online => "Sincronizado — dá para marcar cartas",
+        SyncStatus.Connecting => "Conectando ao GitHub…",
+        SyncStatus.Offline => "Offline — só leitura",
+        SyncStatus.AuthError => "Token com problema — só leitura",
+        _ => "Não conectado",
+    };
+
+    private async Task Connect()
+    {
+        Settings.SetToken(_token);
+        _token = null;
+        _editing = false;
+        await Collection.ResetAsync();
+    }
+
+    private async Task Disconnect()
+    {
+        Settings.SetToken(null);
+        await Collection.RefreshAsync();
+    }
+}

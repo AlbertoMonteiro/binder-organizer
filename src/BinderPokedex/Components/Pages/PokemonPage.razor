@@ -15,12 +15,12 @@ else
     <nav class="neighbors">
         @if (Pokedex.Get(_pokemon.Id - 1) is { } prev)
         {
-            <a class="btn" href="@($"/pokemon/{prev.Id}")">‹ @prev.Number @prev.Name</a>
+            <a class="btn" href="@($"pokemon/{prev.Id}")">‹ @prev.Number @prev.Name</a>
         }
         <span></span>
         @if (Pokedex.Get(_pokemon.Id + 1) is { } next)
         {
-            <a class="btn" href="@($"/pokemon/{next.Id}")">@next.Number @next.Name ›</a>
+            <a class="btn" href="@($"pokemon/{next.Id}")">@next.Number @next.Name ›</a>
         }
     </nav>
 }
