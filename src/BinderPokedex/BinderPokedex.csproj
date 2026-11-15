@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net11.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <BlazorDisableThrowNavigationException>true</BlazorDisableThrowNavigationException>
+    <LangVersion>15</LangVersion>
+    <RootNamespace>BinderPokedex</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="11.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" Version="11.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Remove="Data\pokemon.json" />
+    <EmbeddedResource Include="Data\pokemon.json" LogicalName="BinderPokedex.Data.pokemon.json" />
+  </ItemGroup>
+
+</Project>

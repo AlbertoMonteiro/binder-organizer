@@ -1,0 +1,34 @@
+@page "/pokemon/{Id:int}"
+@inherits CollectionAwareComponent
+
+@if (_pokemon is null)
+{
+    <PageTitle>Não encontrado</PageTitle>
+    <p>Pokémon #@Id não encontrado.</p>
+}
+else
+{
+    <PageTitle>@_pokemon.Name · Binder Pokédex</PageTitle>
+
+    <PokemonDetail Pokemon="_pokemon" />
+
+    <nav class="neighbors">
+        @if (Pokedex.Get(_pokemon.Id - 1) is { } prev)
+        {
+            <a class="btn" href="@($"/pokemon/{prev.Id}")">‹ @prev.Number @prev.Name</a>
+        }
+        <span></span>
+        @if (Pokedex.Get(_pokemon.Id + 1) is { } next)
+        {
+            <a class="btn" href="@($"/pokemon/{next.Id}")">@next.Number @next.Name ›</a>
+        }
+    </nav>
+}
+
+@code {
+    [Parameter] public int Id { get; set; }
+
+    private Pokemon? _pokemon;
+
+    protected override void OnParametersSet() => _pokemon = Pokedex.Get(Id);
+}

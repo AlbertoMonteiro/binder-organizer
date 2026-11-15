@@ -1,0 +1,75 @@
+@page "/progresso"
+@inherits CollectionAwareComponent
+
+<PageTitle>Progresso · Binder Pokédex</PageTitle>
+
+@{
+    var total = Collection.CollectedCount;
+    var percent = total * 100.0 / BinderLayout.Capacity;
+    var missing = Collection.Missing(_generation).ToList();
+}
+
+<section class="progress-summary">
+    <h1>Progresso</h1>
+    <div class="big-number">@total <span class="muted">/ @BinderLayout.Capacity</span></div>
+    <div class="bar"><div style="width:@(percent.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture))%"></div></div>
+    <p class="muted">@percent.ToString("0.0")% completo · faltam @(BinderLayout.Capacity - total)</p>
+    <ul class="rarity-counts">
+        @foreach (var (rarity, count) in Collection.CountByRarity())
+        {
+            <li class="@rarity.CssClass">
+                <span class="rarity-count-n">@count</span>
+                <span class="rarity-count-label">@rarity.Label</span>
+            </li>
+        }
+    </ul>
+</section>
+
+<section class="gen-progress">
+    @foreach (var g in Collection.ProgressByGeneration())
+    {
+        <button class="gen-row @(_generation == g.Generation.Number ? "active" : null)" style="--gen:@g.Generation.Color"
+                @onclick="() => ToggleFilter(g.Generation.Number)">
+            <span class="gen-row-label">@g.Generation.FullLabel</span>
+            <span class="gen-row-count">@g.Collected / @g.Total</span>
+            <span class="bar"><span style="width:@(g.Percent.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture))%"></span></span>
+        </button>
+    }
+</section>
+
+<section>
+    <h2>
+        Faltando @(_generation is { } gen ? $"— {Generations.Get(gen).FullLabel}" : "")
+        <span class="muted">(@missing.Count)</span>
+        @if (_generation is not null)
+        {
+            <button class="btn small" @onclick="() => _generation = null">Mostrar todas</button>
+        }
+    </h2>
+    @if (missing.Count == 0)
+    {
+        <p>Nada faltando aqui. 🎉</p>
+    }
+    else
+    {
+        <ul class="missing-list">
+            <Virtualize Items="missing" Context="p" ItemSize="56">
+                <li>
+                    <a href="@($"/pokemon/{p.Id}")">
+                        <img src="@p.SpriteUrl" alt="" loading="lazy" />
+                        <span class="num">@p.Number</span>
+                        <span class="name">@p.Name</span>
+                        <span class="muted where">@BinderLayout.SlotOf(p.Id)!.Description</span>
+                    </a>
+                    <button class="btn small" @onclick="() => Collection.SetAsync(p.Id, true)">Colocado</button>
+                </li>
+            </Virtualize>
+        </ul>
+    }
+</section>
+
+@code {
+    private int? _generation;
+
+    private void ToggleFilter(int gen) => _generation = _generation == gen ? null : gen;
+}

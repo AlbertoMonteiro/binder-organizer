@@ -1,0 +1,32 @@
+@inherits CollectionAwareComponent
+
+<section class="binder-page @CssClass">
+    <header class="page-header">
+        <span>Folha <strong>@_sheet</strong> · @(_side == BinderSide.Frente ? "Frente" : "Verso")</span>
+        <span class="muted">Pág. @Page · @_collected/16</span>
+    </header>
+    <div class="pocket-grid">
+        @foreach (var p in _pokemon)
+        {
+            <PocketCard Pokemon="p" Rarity="Collection.RarityOf(p.Id)" Highlighted="p.Id == HighlightId" OnSelect="OnSelect" />
+        }
+    </div>
+</section>
+
+@code {
+    [Parameter, EditorRequired] public int Page { get; set; }
+    [Parameter] public int? HighlightId { get; set; }
+    [Parameter] public string? CssClass { get; set; }
+    [Parameter] public EventCallback<Pokemon> OnSelect { get; set; }
+
+    private int _sheet;
+    private BinderSide _side;
+    private List<Pokemon> _pokemon = [];
+    private int _collected => _pokemon.Count(p => Collection.Has(p.Id));
+
+    protected override void OnParametersSet()
+    {
+        (_sheet, _side) = BinderLayout.SheetOfPage(Page);
+        _pokemon = BinderLayout.PokemonIdsOnPage(Page).Select(id => Pokedex.Get(id)!).ToList();
+    }
+}

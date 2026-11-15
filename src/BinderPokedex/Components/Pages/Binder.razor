@@ -1,0 +1,131 @@
+@page "/"
+@page "/binder/{Page:int}"
+@inherits CollectionAwareComponent
+@inject NavigationManager Nav
+
+<PageTitle>Binder · Página @_page</PageTitle>
+
+<div class="binder-toolbar">
+    <div class="nav-group desktop-only">
+        <button class="btn icon" disabled="@(_spread == 0)" @onclick="() => GoSpread(_spread - 1)" aria-label="Abertura anterior">‹</button>
+        <span class="toolbar-label">@SpreadLabel</span>
+        <button class="btn icon" disabled="@(_spread == BinderLayout.Spreads - 1)" @onclick="() => GoSpread(_spread + 1)" aria-label="Próxima abertura">›</button>
+    </div>
+    <div class="nav-group mobile-only">
+        <button class="btn icon" disabled="@(_page == 1)" @onclick="() => GoPage(_page - 1)" aria-label="Página anterior">‹</button>
+        <span class="toolbar-label">Página @_page / @BinderLayout.Pages</span>
+        <button class="btn icon" disabled="@(_page == BinderLayout.Pages)" @onclick="() => GoPage(_page + 1)" aria-label="Próxima página">›</button>
+    </div>
+
+    <div class="nav-group">
+        <label class="muted" for="page-select">Ir para</label>
+        <select id="page-select" value="@_page" @onchange="OnPageSelect">
+            @for (var p = 1; p <= BinderLayout.Pages; p++)
+            {
+                var (sheet, side) = BinderLayout.SheetOfPage(p);
+                <option value="@p">Pág. @p — Folha @sheet @(side == BinderSide.Frente ? "frente" : "verso")</option>
+            }
+        </select>
+    </div>
+</div>
+
+<div class="gen-jumps">
+    @foreach (var g in Generations.All)
+    {
+        var active = _visibleGenerations.Contains(g.Number);
+        <button class="gen-jump @(active ? "active" : null)" style="--gen:@g.Color"
+                title="@($"{g.FullLabel}: #{g.FirstId}–#{Math.Min(g.LastId, BinderLayout.Capacity)} · começa na página {BinderLayout.PageOf(g.FirstId)}")"
+                @onclick="() => GoPage(BinderLayout.PageOf(g.FirstId))">
+            <span class="gen-n">@g.Number</span><span class="gen-r">@g.Region</span>
+        </button>
+    }
+</div>
+
+<div class="spread">
+    @if (_left is { } left)
+    {
+        <BinderPage Page="left" HighlightId="Destaque" OnSelect="Select" CssClass="@(left == _page ? "current" : "secondary")" />
+    }
+    else
+    {
+        <div class="binder-page cover desktop-only"><span>Capa</span></div>
+    }
+    <div class="rings desktop-only" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+    @if (_right is { } right)
+    {
+        <BinderPage Page="right" HighlightId="Destaque" OnSelect="Select" CssClass="@(right == _page ? "current" : "secondary")" />
+    }
+    else
+    {
+        <div class="binder-page cover desktop-only"><span>Contracapa</span></div>
+    }
+</div>
+
+@if (_selected is { } selected)
+{
+    <div class="sheet-backdrop" @onclick="() => _selected = null"></div>
+    <div class="sheet" role="dialog" aria-label="@selected.Name">
+        <PokemonDetail Pokemon="selected" ShowBinderLink="false">
+            <a class="btn" href="@($"/pokemon/{selected.Id}")">Detalhes</a>
+            <button class="btn" @onclick="() => _selected = null">Fechar</button>
+        </PokemonDetail>
+    </div>
+}
+
+@code {
+    [Parameter] public int Page { get; set; }
+    [SupplyParameterFromQuery] public int? Destaque { get; set; }
+
+    private int _page = 1;
+    private int _spread;
+    private int? _left, _right;
+    private Pokemon? _selected;
+    private HashSet<int> _visibleGenerations = [];
+
+    protected override void OnParametersSet()
+    {
+        _page = Math.Clamp(Page == 0 ? 1 : Page, 1, BinderLayout.Pages);
+        _spread = BinderLayout.SpreadOfPage(_page);
+        (_left, _right) = BinderLayout.PagesOfSpread(_spread);
+        _visibleGenerations = new[] { _left, _right }
+            .OfType<int>()
+            .SelectMany(BinderLayout.PokemonIdsOnPage)
+            .Select(id => Generations.ForPokemon(id).Number)
+            .ToHashSet();
+        _selected = null;
+    }
+
+    private string SpreadLabel => (_left, _right) switch
+    {
+        (null, { } r) => $"Capa | Página {r}",
+        ({ } l, null) => $"Página {l} | Contracapa",
+        ({ } l, { } r) => $"Páginas {l}–{r}",
+        _ => "",
+    };
+
+    private void GoPage(int page) => Nav.NavigateTo($"/binder/{Math.Clamp(page, 1, BinderLayout.Pages)}");
+
+    private void GoSpread(int spread)
+    {
+        var (l, r) = BinderLayout.PagesOfSpread(Math.Clamp(spread, 0, BinderLayout.Spreads - 1));
+        GoPage((r ?? l)!.Value);
+    }
+
+    private void OnPageSelect(ChangeEventArgs e)
+    {
+        if (int.TryParse(e.Value?.ToString(), out var p)) GoPage(p);
+    }
+
+    private void Select(Pokemon p) => _selected = p;
+
+    // A página vista aqui vira "onde o binder está aberto" neste aparelho.
+    // Abrir o app na raiz ("/") não conta, senão sempre voltaria para a página 1.
+    private int _recordedPage;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (Page == 0 || _recordedPage == _page) return;
+        _recordedPage = _page;
+        await Position.SetAsync(_page);
+    }
+}

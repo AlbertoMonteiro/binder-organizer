@@ -1,0 +1,46 @@
+﻿@inherits LayoutComponentBase
+@implements IDisposable
+@inject CollectionService Collection
+
+<header class="topbar">
+    <div class="topbar-inner">
+        <a class="brand" href="/">
+            <span class="pokeball" aria-hidden="true"></span>
+            <span class="brand-text">Binder Pokédex</span>
+        </a>
+        <SearchBox />
+        <nav class="nav">
+            <NavLink href="/" Match="NavLinkMatch.All">Binder</NavLink>
+            <NavLink href="/progresso">Progresso</NavLink>
+        </nav>
+        <span class="chip" title="Cartas colocadas no binder">@Collection.CollectedCount / @BinderLayout.Capacity</span>
+        <button type="button" class="fs-toggle" data-fullscreen-toggle aria-label="Alternar tela cheia" title="Tela cheia">
+            <svg class="fs-enter" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" /></svg>
+            <svg class="fs-exit" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5" /></svg>
+        </button>
+    </div>
+</header>
+
+<main class="content">
+    @Body
+</main>
+
+<div id="blazor-error-ui" data-nosnippet>
+    Ocorreu um erro inesperado.
+    <a href="." class="reload">Recarregar</a>
+    <span class="dismiss">🗙</span>
+</div>
+
+@inject ReadingPosition Position
+
+@code {
+    protected override void OnInitialized() => Collection.Changed += Refresh;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender) await Position.LoadAsync();
+    }
+
+    private void Refresh() => _ = InvokeAsync(StateHasChanged);
+    public void Dispose() => Collection.Changed -= Refresh;
+}

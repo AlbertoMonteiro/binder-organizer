@@ -1,0 +1,106 @@
+@inherits CollectionAwareComponent
+@inject NavigationManager Nav
+
+<div class="searchbox" @onfocusout="Close">
+    <input type="search"
+           placeholder="Pesquisar Pokémon (nome ou nº)…"
+           autocomplete="off"
+           aria-label="Pesquisar Pokémon"
+           value="@_query"
+           @oninput="OnInput"
+           @onkeydown="OnKeyDown"
+           @onfocus="() => _open = true" />
+    @if (_open && _results.Count > 0)
+    {
+        <ul class="suggestions" role="listbox">
+            @for (var i = 0; i < _results.Count; i++)
+            {
+                var p = _results[i];
+                var active = i == _active;
+                var rarity = Collection.RarityOf(p.Id);
+                var slot = BinderLayout.SlotOf(p.Id);
+                var turn = slot is null ? null : Position.TurnTo(slot.Page);
+                <li role="option" aria-selected="@active" class="@(active ? "active" : null)"
+                    @onmousedown="() => Go(p)" @onmousedown:preventDefault>
+                    <img src="@p.SpriteUrl" alt="" loading="lazy" />
+                    <span class="sugg-main">
+                        <span class="sugg-title">
+                            <span class="num">@p.Number</span>
+                            <span class="name">@p.Name</span>
+                        </span>
+                        <span class="sugg-meta">
+                            <span class="gen-dot" style="--gen:@p.GenerationInfo.Color">@p.GenerationInfo.Label</span>
+                            @if (slot is null)
+                            {
+                                <span>fora do binder</span>
+                            }
+                            else
+                            {
+                                <span>pág. @slot.Page</span>
+                                @if (turn is not null)
+                                {
+                                    <span class="turn-chip @(turn.SameSpread ? "here" : turn.Forward ? "fwd" : "back")">@turn.Short</span>
+                                }
+                            }
+                        </span>
+                    </span>
+                    @if (slot is not null)
+                    {
+                        <span class="have @(rarity is null ? "missing" : "owned")">
+                            @(rarity switch
+                            {
+                                null => "Falta",
+                                CardRarity.Normal => "✓ Tenho",
+                                { } r => $"✓ {r.Label}",
+                            })
+                        </span>
+                    }
+                </li>
+            }
+        </ul>
+    }
+</div>
+
+@code {
+    private string _query = "";
+    private IReadOnlyList<Pokemon> _results = [];
+    private bool _open;
+    private int _active;
+
+    private void OnInput(ChangeEventArgs e)
+    {
+        _query = e.Value?.ToString() ?? "";
+        _results = Pokedex.Search(_query, 8);
+        _active = 0;
+        _open = true;
+    }
+
+    private void OnKeyDown(KeyboardEventArgs e)
+    {
+        switch (e.Key)
+        {
+            case "ArrowDown" when _results.Count > 0:
+                _active = (_active + 1) % _results.Count;
+                break;
+            case "ArrowUp" when _results.Count > 0:
+                _active = (_active - 1 + _results.Count) % _results.Count;
+                break;
+            case "Enter" when _results.Count > 0:
+                Go(_results[Math.Clamp(_active, 0, _results.Count - 1)]);
+                break;
+            case "Escape":
+                _open = false;
+                break;
+        }
+    }
+
+    private void Go(Pokemon p)
+    {
+        _query = "";
+        _results = [];
+        _open = false;
+        Nav.NavigateTo($"/pokemon/{p.Id}");
+    }
+
+    private void Close() => _open = false;
+}

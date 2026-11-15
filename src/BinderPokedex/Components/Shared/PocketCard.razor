@@ -1,0 +1,28 @@
+<button type="button"
+        class="pocket @(Rarity is { } r ? $"collected {r.CssClass}" : "empty") @(Highlighted ? "highlight" : null)"
+        style="--gen:@Pokemon.GenerationInfo.Color"
+        title="@Title"
+        @onclick="() => OnSelect.InvokeAsync(Pokemon)">
+    <span class="pocket-num">@Pokemon.Number</span>
+    <img src="@Pokemon.SpriteUrl" alt="@Pokemon.Name" loading="lazy" />
+    <span class="pocket-name">@Pokemon.Name</span>
+    @if (Rarity is { } rarity)
+    {
+        <span class="pocket-check" aria-label="Colocado">✓</span>
+        @if (rarity != CardRarity.Normal)
+        {
+            <span class="pocket-rarity" aria-label="@rarity.Label">@rarity.Short</span>
+        }
+    }
+</button>
+
+@code {
+    [Parameter, EditorRequired] public Pokemon Pokemon { get; set; } = null!;
+    /// <summary>Tipo da carta colocada; null = bolso vazio.</summary>
+    [Parameter] public CardRarity? Rarity { get; set; }
+    [Parameter] public bool Highlighted { get; set; }
+    [Parameter] public EventCallback<Pokemon> OnSelect { get; set; }
+
+    private string Title => $"{Pokemon.Number} {Pokemon.Name} — {Pokemon.GenerationInfo.FullLabel}"
+        + (Rarity is { } r ? $" · {r.Label}" : "");
+}

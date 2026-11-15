@@ -1,0 +1,138 @@
+@inherits CollectionAwareComponent
+
+<article class="detail" style="--gen:@Pokemon.GenerationInfo.Color">
+    <img class="detail-art" src="@Pokemon.SpriteUrl" alt="@Pokemon.Name" />
+    <div class="detail-body">
+        <div class="detail-title">
+            <span class="muted">@Pokemon.Number</span>
+            <h2>@Pokemon.Name</h2>
+        </div>
+        <div class="tags">
+            <span class="gen-badge">@Pokemon.GenerationInfo.FullLabel</span>
+            @foreach (var t in Pokemon.Types)
+            {
+                <span class="type type-@t">@t</span>
+            }
+        </div>
+
+        @if (_slot is { } slot)
+        {
+            <dl class="location">
+                <div><dt>Folha</dt><dd>@slot.Sheet</dd></div>
+                <div><dt>Lado</dt><dd>@slot.SideLabel</dd></div>
+                <div><dt>Linha</dt><dd>@slot.Row</dd></div>
+                <div><dt>Coluna</dt><dd>@slot.Column</dd></div>
+                <div><dt>Página</dt><dd>@slot.Page</dd></div>
+            </dl>
+            <MiniGrid Row="slot.Row" Column="slot.Column" />
+
+            <div class="turn-box">
+                <label class="turn-from">
+                    <span>📖 Binder aberto na</span>
+                    <select value="@(Position.Page?.ToString() ?? "")" @onchange="OnPositionChange" aria-label="Página em que o binder está aberto">
+                        <option value="" disabled>página…</option>
+                        @for (var p = 1; p <= BinderLayout.Pages; p++)
+                        {
+                            <option value="@p">página @p</option>
+                        }
+                    </select>
+                </label>
+                @if (Position.TurnTo(slot.Page) is { } turn)
+                {
+                    <p class="turn-result @(turn.SameSpread ? "here" : turn.Forward ? "fwd" : "back")">
+                        @if (turn.Pages == 0)
+                        {
+                            <strong>Já está aberto nesta página.</strong>
+                        }
+                        else if (turn.SameSpread)
+                        {
+                            <strong>Já está aberto aqui</strong>
+                            <span>— é a página da @(slot.Page % 2 == 0 ? "esquerda" : "direita") (@slot.Page).</span>
+                        }
+                        else
+                        {
+                            var sheets = Math.Abs(turn.Sheets);
+                            var pages = Math.Abs(turn.Pages);
+                            <strong>@(turn.Forward ? "↪ Avance" : "↩ Volte") @sheets @(sheets == 1 ? "folha" : "folhas")</strong>
+                            <span>(@pages @(pages == 1 ? "página" : "páginas")) até a página @slot.Page.</span>
+                        }
+                    </p>
+                    @if (Position.Page != slot.Page)
+                    {
+                        <button class="btn small" @onclick="() => Position.SetAsync(slot.Page)">Estou nesta página agora</button>
+                    }
+                }
+                else
+                {
+                    <p class="muted turn-result">Escolha em que página o binder está aberto para saber quantas folhas virar.</p>
+                }
+            </div>
+
+            <div class="rarity-box">
+                <p class="rarity-status">
+                    @if (_rarity is { } current)
+                    {
+                        <span class="ok">✓ No binder como <strong>@current.Label</strong></span>
+                    }
+                    else
+                    {
+                        <span class="muted">Ainda não está no binder — toque no tipo da carta para marcar:</span>
+                    }
+                </p>
+                <div class="rarity-picker" role="group" aria-label="Tipo da carta">
+                    @foreach (var r in CardRarities.All)
+                    {
+                        <button type="button" class="rarity-opt @r.CssClass @(_rarity == r ? "selected" : null)"
+                                aria-pressed="@(_rarity == r ? "true" : "false")"
+                                @onclick="() => Collection.SetAsync(Pokemon.Id, r)">
+                            <span class="rarity-name">@(r.Short is { Length: > 0 } s ? $"{s} " : "")@r.Label</span>
+                            @if (r.Hint is { } hint)
+                            {
+                                <small>@hint</small>
+                            }
+                        </button>
+                    }
+                </div>
+            </div>
+
+            <div class="actions">
+                @if (_rarity is not null)
+                {
+                    <button class="btn" @onclick="Remove">Tirar do binder</button>
+                }
+                @if (ShowBinderLink)
+                {
+                    <a class="btn" href="@($"/binder/{slot.Page}?destaque={Pokemon.Id}")">Ver no binder</a>
+                }
+                @ChildContent
+            </div>
+        }
+        else
+        {
+            <p class="out-of-binder">
+                Este Pokémon fica <strong>fora do binder</strong>: o binder tem @BinderLayout.Capacity posições
+                e a Pokédex Nacional tem @Pokedex.All.Count Pokémon.
+            </p>
+            <div class="actions">@ChildContent</div>
+        }
+    </div>
+</article>
+
+@code {
+    [Parameter, EditorRequired] public Pokemon Pokemon { get; set; } = null!;
+    [Parameter] public bool ShowBinderLink { get; set; } = true;
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+
+    private BinderSlot? _slot;
+
+    protected override void OnParametersSet() => _slot = BinderLayout.SlotOf(Pokemon.Id);
+
+    private CardRarity? _rarity => Collection.RarityOf(Pokemon.Id);
+
+    private Task Remove() => Collection.SetAsync(Pokemon.Id, (CardRarity?)null);
+
+    private async Task OnPositionChange(ChangeEventArgs e)
+    {
+        if (int.TryParse(e.Value?.ToString(), out var page)) await Position.SetAsync(page);
+    }
+}

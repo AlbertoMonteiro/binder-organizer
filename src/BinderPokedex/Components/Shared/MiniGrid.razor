@@ -1,0 +1,14 @@
+<div class="mini-grid" aria-label="@($"Linha {Row}, coluna {Column}")">
+    @for (var r = 1; r <= BinderLayout.Rows; r++)
+    {
+        for (var c = 1; c <= BinderLayout.Columns; c++)
+        {
+            <span class="@(r == Row && c == Column ? "on" : null)"></span>
+        }
+    }
+</div>
+
+@code {
+    [Parameter] public int Row { get; set; }
+    [Parameter] public int Column { get; set; }
+}

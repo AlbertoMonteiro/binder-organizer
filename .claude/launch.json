@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "binder-pokedex",
+      "runtimeExecutable": "dotnet",
+      "runtimeArgs": ["run", "--project", "src/BinderPokedex", "--no-launch-profile", "-e", "ASPNETCORE_ENVIRONMENT=Development"],
+      "port": 5150
+    },
+    {
+      "name": "binder-pokedex-test",
+      "runtimeExecutable": "dotnet",
+      "runtimeArgs": ["run", "--project", "src/BinderPokedex", "--no-launch-profile", "-e", "ASPNETCORE_ENVIRONMENT=Development", "--", "--urls", "http://localhost:5151", "--Binder:DatabasePath", "C:\\Users\\alber\\AppData\\Local\\Temp\\claude\\f22a9250adc726ab\\c0b95bd6-aafe-40bc-b81a-379fa06a6b01\\scratchpad\\dbcopy\\binder.db"],
+      "port": 5151
+    }
+  ]
+}
